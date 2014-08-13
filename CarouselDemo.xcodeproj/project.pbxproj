@@ -22,6 +22,7 @@
 		6885E4A1199C2DF100A1FC90 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6885E480199C2DF100A1FC90 /* UIKit.framework */; };
 		6885E4A9199C2DF100A1FC90 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6885E4A7199C2DF100A1FC90 /* InfoPlist.strings */; };
 		6885E4AB199C2DF100A1FC90 /* CarouselDemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6885E4AA199C2DF100A1FC90 /* CarouselDemoTests.m */; };
+		6885E4B7199C2E4100A1FC90 /* CarouselViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 6885E4B6199C2E4100A1FC90 /* CarouselViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +56,8 @@
 		6885E4A6199C2DF100A1FC90 /* CarouselDemoTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "CarouselDemoTests-Info.plist"; sourceTree = "<group>"; };
 		6885E4A8199C2DF100A1FC90 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		6885E4AA199C2DF100A1FC90 /* CarouselDemoTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CarouselDemoTests.m; sourceTree = "<group>"; };
+		6885E4B5199C2E4100A1FC90 /* CarouselViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CarouselViewController.h; sourceTree = "<group>"; };
+		6885E4B6199C2E4100A1FC90 /* CarouselViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CarouselViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +117,7 @@
 		6885E482199C2DF100A1FC90 /* CarouselDemo */ = {
 			isa = PBXGroup;
 			children = (
+				6885E4B4199C2E0000A1FC90 /* Carousel */,
 				6885E48B199C2DF100A1FC90 /* AppDelegate.h */,
 				6885E48C199C2DF100A1FC90 /* AppDelegate.m */,
 				6885E48E199C2DF100A1FC90 /* Main_iPhone.storyboard */,
@@ -153,6 +157,15 @@
 				6885E4A7199C2DF100A1FC90 /* InfoPlist.strings */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		6885E4B4199C2E0000A1FC90 /* Carousel */ = {
+			isa = PBXGroup;
+			children = (
+				6885E4B5199C2E4100A1FC90 /* CarouselViewController.h */,
+				6885E4B6199C2E4100A1FC90 /* CarouselViewController.m */,
+			);
+			name = Carousel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -253,6 +266,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6885E4B7199C2E4100A1FC90 /* CarouselViewController.m in Sources */,
 				6885E496199C2DF100A1FC90 /* ViewController.m in Sources */,
 				6885E48D199C2DF100A1FC90 /* AppDelegate.m in Sources */,
 				6885E489199C2DF100A1FC90 /* main.m in Sources */,
