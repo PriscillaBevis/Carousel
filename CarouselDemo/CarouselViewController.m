@@ -109,12 +109,21 @@
     
     //display them on screen
     int i = 0;
+    _visibleViews = [[NSMutableArray alloc] init];
+    UIView *prevView = nil;
     for (UIView *view in _cachedViews) {
         
         CGRect frame = [self frameForViewAtPosition:i];
         view.frame = frame;
-        [self.view addSubview:view];
         
+        [_visibleViews addObject:view];
+        if (i > _numberOfItemsPerSide) {
+            [self.view insertSubview:view belowSubview:prevView];
+        } else {
+            [self.view addSubview:view];
+        }
+        
+        prevView = view;
         i++;
     }
 }
