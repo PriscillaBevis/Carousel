@@ -14,6 +14,7 @@
     CGSize smallestSize;
     CGSize largestSize;
     
+    int maxVisibleItems;
 }
 
 @property (nonatomic, assign) NSUInteger numItems;
@@ -25,6 +26,7 @@
 @property (nonatomic, retain) NSMutableArray *blurredViews; //only needed if we are actually blurring views.
 
 //views
+@property (nonatomic, retain) UIView *spareView;
 @property (nonatomic, retain) NSMutableArray *visibleViews;
 
 //used for panning state
@@ -115,6 +117,12 @@
         
         CGRect frame = [self frameForViewAtPosition:i];
         view.frame = frame;
+        view.tag = i;
+        
+        //add tap gesture
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(itemWasTapped:)];
+        tap.delegate = self;
+        [view addGestureRecognizer:tap];
         
         [_visibleViews addObject:view];
         if (i > _numberOfItemsPerSide) {
@@ -126,6 +134,33 @@
         prevView = view;
         i++;
     }
+    
+    _currentIndex = _numberOfItemsPerSide;
+    maxVisibleItems = _numberOfItemsPerSide * 2 + 2;
+}
+
+//returns the rasterized view to size
+-(UIView*) viewForItemAtIndex:(int)index {
+    
+    UIView *rawView = _originalViews[index];
+    if (!rawView) {
+        rawView = [_datasource carouselViewController:self viewForItemAtIndex:index];
+        [_originalViews insertObject:rawView atIndex:index];
+    }
+    
+
+    UIImageView *imageView = _cachedViews[index];
+    if (!imageView) {
+        imageView = [self imageViewForView:rawView];
+        imageView.tag = index;
+        [_cachedViews insertObject:imageView atIndex:index];
+        
+        UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(itemWasTapped:)];
+        tap.delegate = self;
+        [imageView addGestureRecognizer:tap];
+    }
+    
+    return imageView;
 }
 
 -(void) rasterizeAndCacheViews {
@@ -198,43 +233,111 @@
     } else if (pan.state == UIGestureRecognizerStateChanged) {
         
         CGFloat diff = currPoint.x - _prevPoint.x;
+        NSLog(@"%f", diff);
         
-        if (diff > 0) {
-            //moving to the right.
+        
+        //determine if we need to add another view
+        if (!_spareView) {
+            UIView *prevView;
+            int position = 0;
+            int indexToAdd = (int)_currentIndex - (int)_numberOfItemsPerSide - 1;
             
+            if (diff > 0) { //going to the right
+                if (indexToAdd < 0) {
+                    indexToAdd = (int)_numItems - 1;
+                }
+                prevView = _visibleViews[0];
+                
+            } else {
+                indexToAdd = (int)_currentIndex + 1;
+                position = (int)_numItems-1;
+                if (indexToAdd >= _numItems) {
+                    indexToAdd = indexToAdd - (int)_numItems;
+                }
+                prevView = _visibleViews.lastObject;
+                
+            }
             
-        } else {
-            //moving to the left.
+            UIView *view = [self viewForItemAtIndex:indexToAdd];
+            CGRect frame = [self frameForViewAtPosition:position];
+            view.frame = frame;
+            view.alpha = 0;
+            _spareView = view;
             
-            
+            [self.view insertSubview:view belowSubview:prevView];
         }
         
-    } else if (pan.state == UIGestureRecognizerStateEnded) {
         
+        //determine how far along before we tick over.
+        UIView *firstView = _visibleViews[0];
+        CGFloat center = self.view.frame.size.width/2;
+        CGFloat leftmost = _leftRightMargin + smallestSize.width/2;
+        CGFloat factorWidths = (center - leftmost)/_numberOfItemsPerSide;
+        CGPoint viewCenter = firstView.center;
+        
+        float ratio = (viewCenter.x - leftmost)/factorWidths;
+        _spareView.alpha = ratio;
+        
+        //adjust existing views
+        for (UIView *view in _visibleViews) {
+            //shuffle each of the views over.
+            [self adjustFrameForView:view withDiff:diff];
+        }
+        
+        
+        //determine if we need to pop off a view
+        
+        
+        
+        _prevPoint = currPoint;
+        
+    } else if (pan.state == UIGestureRecognizerStateEnded) {
+        [self snap];
         
     }
 }
 
+
 -(void) adjustFrameForView:(UIView *)view withDiff:(CGFloat)diff {
     
     CGPoint center = view.center;
-    CGRect frame = view.frame;
+    CGFloat leftmost = _leftRightMargin + smallestSize.width/2;
     
-    //figure out how much to shrink by.
-    if (_shrinkSideItems) {
-        
-    }
+    
+    
+    
+    
+    
+    
+    CGRect frame = view.frame;
     
     //shuffle center across.
     CGPoint adjustedCenter = CGPointMake(center.x += diff, center.y += diff);
     
+    //figure out how much to shrink by.
+    CGFloat width = frame.size.width;
+    CGFloat height = frame.size.height;
+    
+    if (_shrinkSideItems) {
+        //leftMostCenter point
+        CGFloat leftMost = _leftRightMargin + smallestSize.width/2;
+        CGFloat center = self.view.frame.size.width/2;
+        
+        CGFloat scale;
+        if (adjustedCenter.x > center) {
+            CGFloat rightMost = self.view.frame.size.width - leftMost;
+            scale = (rightMost - adjustedCenter.x) / (center - leftMost);
+        } else {
+            scale = adjustedCenter.x / (center - leftMost);
+        }
+    }
+
     //adjust for if last item
     
     
     //adjust for going off screen
     
-    
-    
+
 }
 
 //the left most position is 0.
@@ -244,8 +347,8 @@
     CGFloat heightDiff = largestSize.height - smallestSize.height;
     
     //determine where this view is in relation to the middle.
-    int middlePos = _numberOfItemsPerSide;
-    int lastIndex = _numberOfItemsPerSide*2;
+    NSUInteger middlePos = _numberOfItemsPerSide;
+    NSUInteger lastIndex = _numberOfItemsPerSide*2;
     float endToMiddleRatio = (float)position / (float)middlePos;
     if (position > middlePos) {
         endToMiddleRatio = (float)(lastIndex - position) / (float)middlePos;
@@ -275,6 +378,8 @@
 -(void) itemWasTapped:(UITapGestureRecognizer*)tap {
     
     UIView *view =  tap.view;
+    
+    NSLog(@"did tap item: %d", view.tag);
     
     //check if this is the hero image.
     if (_currentIndex == view.tag) {
@@ -347,7 +452,19 @@
     return image;
 }
 
+-(UIImageView*) imageViewForView:(UIView*)view {
+    
+    UIImage *image = [self viewAsImage:view];
 
+    //save as the largest size needed.
+    UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, largestSize.width, largestSize.height)];
+    imageView.image = image;
+    imageView.contentMode = UIViewContentModeScaleAspectFit;
+    
+    imageView.alpha = 0.8;
+    
+    return imageView;
+}
 
 #pragma mark - Helpers
 

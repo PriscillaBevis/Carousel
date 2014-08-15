@@ -29,6 +29,7 @@
     _carouselVC.loopInfinitely = YES;
     _carouselVC.blurSideItems = YES;
     _carouselVC.shrinkSideItems = YES;
+    _carouselVC.allowScrolling = YES;
     
     _carouselVC.view.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
     _carouselVC.view.backgroundColor = [UIColor grayColor];
