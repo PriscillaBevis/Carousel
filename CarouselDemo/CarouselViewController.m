@@ -15,6 +15,8 @@
     CGSize largestSize;
     
     int maxVisibleItems;
+    
+    CGRect selfFrame;
 }
 
 @property (nonatomic, assign) NSUInteger numItems;
@@ -49,7 +51,23 @@
     return self;
 }
 
+-(id) initWithFrame:(CGRect)frame andDatasource:(id <CarouselViewControllerDatasource>)datasource {
+    self = [super init];
+    if (self) {
+        _topBotMargin = 20;
+        _leftRightMargin = 10;
+        self.datasource = datasource;
+        selfFrame = frame;
+    }
+    return self;
+}
+
 -(void) viewDidLoad {
+    
+    self.view.frame = selfFrame;
+    self.view.backgroundColor = [UIColor grayColor];
+    
+    [self printRect:self.view.frame];
     
     if (!_datasource) {
         [self log:@"Cannot load without a datasource."];
@@ -61,15 +79,11 @@
         pan.delegate = self;
         [self.view addGestureRecognizer:pan];
     }
-}
 
--(void) viewWillAppear:(BOOL)animated {
     [self createInitialViews];
 }
 
--(void) viewWillDisappear:(BOOL)animated {
-    
-}
+
 
 
 #pragma mark - Carousel Initialisation
@@ -233,39 +247,37 @@
     } else if (pan.state == UIGestureRecognizerStateChanged) {
         
         CGFloat diff = currPoint.x - _prevPoint.x;
-        NSLog(@"%f", diff);
-        
         
         //determine if we need to add another view
-        if (!_spareView) {
-            UIView *prevView;
-            int position = 0;
-            int indexToAdd = (int)_currentIndex - (int)_numberOfItemsPerSide - 1;
-            
-            if (diff > 0) { //going to the right
-                if (indexToAdd < 0) {
-                    indexToAdd = (int)_numItems - 1;
-                }
-                prevView = _visibleViews[0];
-                
-            } else {
-                indexToAdd = (int)_currentIndex + 1;
-                position = (int)_numItems-1;
-                if (indexToAdd >= _numItems) {
-                    indexToAdd = indexToAdd - (int)_numItems;
-                }
-                prevView = _visibleViews.lastObject;
-                
-            }
-            
-            UIView *view = [self viewForItemAtIndex:indexToAdd];
-            CGRect frame = [self frameForViewAtPosition:position];
-            view.frame = frame;
-            view.alpha = 0;
-            _spareView = view;
-            
-            [self.view insertSubview:view belowSubview:prevView];
-        }
+//        if (!_spareView) {
+//            UIView *prevView;
+//            int position = 0;
+//            int indexToAdd = (int)_currentIndex - (int)_numberOfItemsPerSide - 1;
+//            
+//            if (diff > 0) { //going to the right
+//                if (indexToAdd < 0) {
+//                    indexToAdd = (int)_numItems - 1;
+//                }
+//                prevView = _visibleViews[0];
+//                
+//            } else {
+//                indexToAdd = (int)_currentIndex + 1;
+//                position = (int)_numItems-1;
+//                if (indexToAdd >= _numItems) {
+//                    indexToAdd = indexToAdd - (int)_numItems;
+//                }
+//                prevView = _visibleViews.lastObject;
+//                
+//            }
+//            
+//            UIView *view = [self viewForItemAtIndex:indexToAdd];
+//            CGRect frame = [self frameForViewAtPosition:position];
+//            view.frame = frame;
+//            view.alpha = 0;
+//            _spareView = view;
+//            
+//            [self.view insertSubview:view belowSubview:prevView];
+//        }
         
         
         //determine how far along before we tick over.
@@ -284,7 +296,6 @@
             [self adjustFrameForView:view withDiff:diff];
         }
         
-        
         //determine if we need to pop off a view
         
         
@@ -297,76 +308,107 @@
     }
 }
 
-
+/**
+ ** Used to adjust item frames while panning
+ **/
 -(void) adjustFrameForView:(UIView *)view withDiff:(CGFloat)diff {
     
-    CGPoint center = view.center;
-    CGFloat leftmost = _leftRightMargin + smallestSize.width/2;
-    
-    
-    
-    
-    
-    
-    
     CGRect frame = view.frame;
-    
-    //shuffle center across.
-    CGPoint adjustedCenter = CGPointMake(center.x += diff, center.y += diff);
-    
-    //figure out how much to shrink by.
+    CGPoint center = view.center;
     CGFloat width = frame.size.width;
     CGFloat height = frame.size.height;
     
-    if (_shrinkSideItems) {
-        //leftMostCenter point
-        CGFloat leftMost = _leftRightMargin + smallestSize.width/2;
-        CGFloat center = self.view.frame.size.width/2;
-        
-        CGFloat scale;
-        if (adjustedCenter.x > center) {
-            CGFloat rightMost = self.view.frame.size.width - leftMost;
-            scale = (rightMost - adjustedCenter.x) / (center - leftMost);
-        } else {
-            scale = adjustedCenter.x / (center - leftMost);
-        }
-    }
+    //shuffle center across.
+    CGPoint adjustedCenter = CGPointMake(center.x += diff, center.y);
 
-    //adjust for if last item
+    //figure out how far away we are from 'ticking over' to the next center point.
+    CGFloat centerOfView = self.view.frame.size.width/2;
     
+    CGFloat percentage = 0;
+    if (_shrinkSideItems &&
+        ((view.frame.origin.x > _leftRightMargin) && (view.frame.origin.x < self.view.frame.size.width - _leftRightMargin))) {
+        //percentage from smallest to largest
+        CGFloat xRatio = adjustedCenter.x;
+        CGFloat ratioWidth = centerOfView - _leftRightMargin - smallestSize.width/2;
+
+        if (xRatio > centerOfView) {
+            xRatio = xRatio - centerOfView;
+            xRatio = ratioWidth - xRatio;
+        } else {
+            xRatio = xRatio - _leftRightMargin - smallestSize.width/2;
+        }
+        percentage = xRatio/ratioWidth;
+        
+        width = smallestSize.width + (largestSize.width - smallestSize.width) * percentage;
+        height = smallestSize.width + (largestSize.height - smallestSize.height) * percentage;
+    }
+    
+    //adjust for if last item
+    CGFloat x = adjustedCenter.x - width/2;
+    CGFloat y = adjustedCenter.y - height/2;
+    
+    if ((x < _leftRightMargin) || ((x + width) > (self.view.frame.size.width - _leftRightMargin))) {
+        //the view has reached the end and should start fading out.
+        CGFloat opacity = 0;
+        if (x < _leftRightMargin) {
+            opacity = _leftRightMargin/(x+smallestSize.width);
+        } else {
+            opacity = 0;
+        }
+        
+       
+        
+        
+        if (opacity < 0) {
+            opacity = 0;
+        }
+        view.alpha = 1 - opacity;
+    }
     
     //adjust for going off screen
+    view.frame = CGRectMake(x, y, width, height);
     
-
 }
 
 //the left most position is 0.
 -(CGRect) frameForViewAtPosition:(int)position {
     
-    CGFloat widthDiff = largestSize.width - smallestSize.width;
-    CGFloat heightDiff = largestSize.height - smallestSize.height;
-    
-    //determine where this view is in relation to the middle.
-    NSUInteger middlePos = _numberOfItemsPerSide;
-    NSUInteger lastIndex = _numberOfItemsPerSide*2;
-    float endToMiddleRatio = (float)position / (float)middlePos;
-    if (position > middlePos) {
-        endToMiddleRatio = (float)(lastIndex - position) / (float)middlePos;
+    if (_shrinkSideItems) {
+        CGFloat widthDiff = largestSize.width - smallestSize.width;
+        CGFloat heightDiff = largestSize.height - smallestSize.height;
+        
+        //determine where this view is in relation to the middle.
+        NSUInteger middlePos = _numberOfItemsPerSide;
+        NSUInteger lastIndex = _numberOfItemsPerSide*2;
+        float endToMiddleRatio = (float)position / (float)middlePos;
+        if (position > middlePos) {
+            endToMiddleRatio = (float)(lastIndex - position) / (float)middlePos;
+        }
+        
+        CGFloat width = smallestSize.width + (widthDiff * endToMiddleRatio);
+        CGFloat height = smallestSize.height + (heightDiff * endToMiddleRatio);
+        
+        //left and top point using center anchors
+        CGFloat leftMost = _leftRightMargin + smallestSize.width/2;
+        CGFloat center = self.view.frame.size.width/2;
+        
+        CGFloat factorWidths = (center - leftMost)/_numberOfItemsPerSide;
+        int x = (leftMost + position * factorWidths) - width/2;
+        int y = (self.view.frame.size.height/2 - height/2);
+        
+        return CGRectMake(x, y, width, height);
+        
+        
+    } else {
+        CGFloat leftMost = _leftRightMargin + smallestSize.width/2 + largestSize.width/2;
+        CGFloat center = self.view.frame.size.width/2;
+        CGFloat factorWidths = (center - leftMost)/_numberOfItemsPerSide;
+        
+        int x = leftMost + (position * factorWidths) - largestSize.width/2;
+        int y = (self.view.frame.size.height - largestSize.height)/2;
+        
+        return CGRectMake(x, y, largestSize.width, largestSize.height);
     }
-    
-    CGFloat width = smallestSize.width + (widthDiff * endToMiddleRatio);
-    CGFloat height = smallestSize.height + (heightDiff * endToMiddleRatio);
-    
-    
-    //left and top point using center anchors
-    CGFloat leftMost = _leftRightMargin + smallestSize.width/2;
-    CGFloat center = self.view.frame.size.width/2;
-    
-    CGFloat factorWidths = (center - leftMost)/_numberOfItemsPerSide;
-    int x = (leftMost + position * factorWidths) - width/2;
-    int y = (self.view.frame.size.height/2 - height/2);
-    
-    return CGRectMake(x, y, width, height);
 }
 
 

@@ -50,6 +50,8 @@
 @property (nonatomic, assign) CGFloat leftRightMargin;
 
 
+-(id) initWithFrame:(CGRect)frame andDatasource:(id <CarouselViewControllerDatasource>)datasource;
+
 //controls
 -(void) jumpToItemAtIndex:(int)index animated:(BOOL)animated;
 -(void) scrollToNextItemAnimated:(BOOL)animated;

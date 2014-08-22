@@ -7,12 +7,29 @@
 //
 
 #import "AppDelegate.h"
+#import "ViewController.h"
+
+@interface AppDelegate()
+
+@property (nonatomic, retain) UINavigationController *navigationController;
+
+@end
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    // Override point for customization after application launch.
+
+    UIStoryboard *mainstoryboard = [UIStoryboard storyboardWithName:@"Main_iPad" bundle:nil];
+    ViewController *vc = [mainstoryboard instantiateInitialViewController];
+    
+    _navigationController = [[UINavigationController alloc] initWithRootViewController:vc];
+    _navigationController.navigationBarHidden = YES;
+    
+    [_window setRootViewController:_navigationController];
+    [_window makeKeyAndVisible];
+    
+    
     return YES;
 }
 							

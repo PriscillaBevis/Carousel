@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>0C3715FD-1371-481B-A8DE-B792F5E3D073</string>
+	<key>IDESourceControlProjectName</key>
+	<string>CarouselDemo</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>8CACA142-6DD8-447B-8A9C-30501765D192</key>
+		<string>https://github.com/PriscillaBevis/Carousel.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>CarouselDemo.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>8CACA142-6DD8-447B-8A9C-30501765D192</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/PriscillaBevis/Carousel.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>8CACA142-6DD8-447B-8A9C-30501765D192</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>8CACA142-6DD8-447B-8A9C-30501765D192</string>
+			<key>IDESourceControlWCCName</key>
+			<string>CarouselDemo</string>
+		</dict>
+	</array>
+</dict>
+</plist>

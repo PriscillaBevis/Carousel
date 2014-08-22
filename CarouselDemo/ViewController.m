@@ -21,19 +21,21 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	
-    _carouselVC = [[CarouselViewController alloc] init];
-    _carouselVC.datasource = self;
+    
+}
 
+-(void) viewWillAppear:(BOOL)animated {
+
+    _carouselVC = [[CarouselViewController alloc] initWithFrame:CGRectMake(0, 100, self.view.frame.size.width, 300) andDatasource:self];
+    
     _carouselVC.numberOfItemsPerSide = 2;
     _carouselVC.loopInfinitely = YES;
     _carouselVC.blurSideItems = YES;
     _carouselVC.shrinkSideItems = YES;
     _carouselVC.allowScrolling = YES;
+    _carouselVC.leftRightMargin = 50;
     
-    _carouselVC.view.frame = CGRectMake(0, 0, self.view.frame.size.width, self.view.frame.size.height);
-    _carouselVC.view.backgroundColor = [UIColor grayColor];
-    
+    [self addChildViewController:_carouselVC];
     [self.view addSubview:_carouselVC.view];
     
 }
