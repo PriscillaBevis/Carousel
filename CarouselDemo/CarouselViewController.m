@@ -11,8 +11,17 @@
 
 @interface CarouselViewController () <UIGestureRecognizerDelegate> {
     
+    //this stuff is really just to 'cache' values so we don't have to keep recalculating commonly used values
     CGSize smallestSize;
     CGSize largestSize;
+    CGSize segmentDiff; //difference in width/height for each segment
+    CGFloat segmentCenterDiff; //difference in between each the centres of each segment
+    
+    CGFloat leftMostCentre;
+    CGFloat rightMostCentre;
+    CGFloat leftMostX;
+    CGFloat rightMostX;
+    CGFloat centreX;
     
     int maxVisibleItems;
     
@@ -189,7 +198,7 @@
         imageView.image = image;
         imageView.contentMode = UIViewContentModeScaleAspectFit;
         
-        imageView.alpha = 0.8;
+        imageView.alpha = 0.9;
         
         [_cachedViews addObject:imageView];
     }
@@ -231,6 +240,28 @@
     placeholder2.alpha = 0.5;
     [self.view addSubview:placeholder2];
 
+    
+    //determine what the size increments should be.
+    CGFloat widthDiff = largestSize.width - smallestSize.width;
+    widthDiff = widthDiff/_numberOfItemsPerSide;
+    CGFloat heightDiff = largestSize.height - smallestSize.height;
+    heightDiff = heightDiff/_numberOfItemsPerSide;
+    segmentDiff = CGSizeMake(widthDiff, heightDiff);
+    
+    //determine other commonly used values
+    leftMostX = _leftRightMargin;
+    rightMostX = self.view.frame.size.width - _leftRightMargin;
+    leftMostCentre = _leftRightMargin + smallestSize.width/2;
+    rightMostCentre = rightMostX - smallestSize.width/2;
+    centreX = self.view.frame.size.width/2;
+    
+    segmentCenterDiff = (centreX - leftMostCentre)/_numberOfItemsPerSide;
+    
+    
+    NSLog(@"smallest: %f %f", smallestSize.width, smallestSize.height);
+    NSLog(@"largest: %f %f", largestSize.width, largestSize.height);
+    
+    NSLog(@"segment diff: %f %f", segmentDiff.width, segmentDiff.height);
 }
 
 
@@ -278,26 +309,15 @@
 //            
 //            [self.view insertSubview:view belowSubview:prevView];
 //        }
-        
-        
-        //determine how far along before we tick over.
-        UIView *firstView = _visibleViews[0];
-        CGFloat center = self.view.frame.size.width/2;
-        CGFloat leftmost = _leftRightMargin + smallestSize.width/2;
-        CGFloat factorWidths = (center - leftmost)/_numberOfItemsPerSide;
-        CGPoint viewCenter = firstView.center;
-        
-        float ratio = (viewCenter.x - leftmost)/factorWidths;
-        _spareView.alpha = ratio;
-        
+
         //adjust existing views
-        for (UIView *view in _visibleViews) {
-            //shuffle each of the views over.
-            [self adjustFrameForView:view withDiff:diff];
+        float percent = [self progressUntilNextSnapWithDiff:diff];
+        
+        for (int i = 0; i < _visibleViews.count; i++) {
+            [self adjustFrameForView:_visibleViews[i] withDiff:diff progress:percent andIndex:i];
         }
         
         //determine if we need to pop off a view
-        
         
         
         _prevPoint = currPoint;
@@ -308,67 +328,100 @@
     }
 }
 
+//given the new diff, calculate how far any view is from 'ticking' over to the next position
+-(float) progressUntilNextSnapWithDiff:(CGFloat) diff {
+
+    //grab the middle item
+    UIView *centerItem = _visibleViews[_numberOfItemsPerSide];
+    
+    //adjust the center with the diff given
+    CGFloat adjustedCenter = centerItem.center.x + diff;
+    
+    //determine it's percentage
+    adjustedCenter = adjustedCenter - leftMostCentre;
+    float xratio = fmodf(adjustedCenter, (float)segmentCenterDiff);
+
+    float percent = xratio/segmentCenterDiff;
+    
+    //NSLog(@"%f %f = %f", adjustedCenter, segmentCenterDiff, xratio);
+    
+    return percent;
+}
+
 /**
  ** Used to adjust item frames while panning
  **/
--(void) adjustFrameForView:(UIView *)view withDiff:(CGFloat)diff {
+-(void) adjustFrameForView:(UIView *)view withDiff:(CGFloat)diff progress:(float)percent andIndex:(int)index {
     
     CGRect frame = view.frame;
     CGPoint center = view.center;
     CGFloat width = frame.size.width;
     CGFloat height = frame.size.height;
     
-    //shuffle center across.
-    CGPoint adjustedCenter = CGPointMake(center.x += diff, center.y);
-
-    //figure out how far away we are from 'ticking over' to the next center point.
-    CGFloat centerOfView = self.view.frame.size.width/2;
+    CGFloat adjustedX = center.x + diff;
     
-    CGFloat percentage = 0;
-    if (_shrinkSideItems &&
-        ((view.frame.origin.x > _leftRightMargin) && (view.frame.origin.x < self.view.frame.size.width - _leftRightMargin))) {
-        //percentage from smallest to largest
-        CGFloat xRatio = adjustedCenter.x;
-        CGFloat ratioWidth = centerOfView - _leftRightMargin - smallestSize.width/2;
-
-        if (xRatio > centerOfView) {
-            xRatio = xRatio - centerOfView;
-            xRatio = ratioWidth - xRatio;
-        } else {
-            xRatio = xRatio - _leftRightMargin - smallestSize.width/2;
-        }
-        percentage = xRatio/ratioWidth;
-        
-        width = smallestSize.width + (largestSize.width - smallestSize.width) * percentage;
-        height = smallestSize.width + (largestSize.height - smallestSize.height) * percentage;
+    NSLog(@"\n\n\nINDEX: %d - %f %f", index, percent, diff);
+    
+    //adjust percentage for width/height useage.
+    if (center.x + diff > centreX) {
+        percent = 1 - percent;
+        NSLog(@"adjusted percent: %f", percent);
     }
     
-    //adjust for if last item
-    CGFloat x = adjustedCenter.x - width/2;
-    CGFloat y = adjustedCenter.y - height/2;
-    
-    if ((x < _leftRightMargin) || ((x + width) > (self.view.frame.size.width - _leftRightMargin))) {
-        //the view has reached the end and should start fading out.
-        CGFloat opacity = 0;
-        if (x < _leftRightMargin) {
-            opacity = _leftRightMargin/(x+smallestSize.width);
+    //adjust width & height
+    BOOL shouldFadeOut = (frame.origin.x < leftMostX || frame.origin.x > rightMostX) ? YES : NO;
+    if (_shrinkSideItems) {
+        
+        int segment = (index > _numberOfItemsPerSide) ? _numberOfItemsPerSide - (index - _numberOfItemsPerSide) -1 : index;
+        segment = (segment >= _numberOfItemsPerSide) ? segment-1 : segment;
+        
+        NSLog(@"segment: %d", segment);
+        
+        CGFloat adjustedWidth = (smallestSize.width + segmentDiff.width*segment) + segmentDiff.width*percent;
+        CGFloat adjustedHeight = (smallestSize.height + segmentDiff.height*segment) + segmentDiff.height*percent;
+        
+        NSLog(@"%f %f %d %f %f", smallestSize.width, segmentDiff.width, segment, segmentDiff.width, percent);
+        NSLog(@"adjusted: %f %f", adjustedWidth, adjustedHeight);
+        
+        if (shouldFadeOut) {
+            //width and height rules differ. half the difference
+            width = width + (adjustedWidth - width)/2;
+            height = height + (adjustedHeight - height)/2;
+            
+            NSLog(@"should fade: %f %f", width, height);
+            
         } else {
-            opacity = 0;
+            width = adjustedWidth;
+            height = adjustedHeight;
+            
+            NSLog(@"%f %f", adjustedWidth, adjustedHeight);
+            NSLog(@"w h: %f %f", width, height);
         }
-        
-       
-        
-        
-        if (opacity < 0) {
-            opacity = 0;
-        }
-        view.alpha = 1 - opacity;
     }
     
-    //adjust for going off screen
+    //adjust view origin
+    CGFloat x = adjustedX - width/2;
+    CGFloat y = center.y - height/2;
+    
+    NSLog(@"x y: %f %f", x, y);
+    
+    //adjust view alpha
+//    if (shouldFadeOut) {
+//        view.alpha = percent;
+//    } else {
+//        view.alpha = 0;
+//    }
+//    
+//    //adjust z. i.e. which view is in front.
+//    if ((view.frame.origin.x > centreX && x < centreX) ||
+//        (view.frame.origin.x+view.frame.size.width < centreX && x+width > centreX)) {
+//        [self.view bringSubviewToFront:view];
+//    }
+    
+    //make the change!
     view.frame = CGRectMake(x, y, width, height);
-    
 }
+
 
 //the left most position is 0.
 -(CGRect) frameForViewAtPosition:(int)position {

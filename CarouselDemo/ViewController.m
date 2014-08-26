@@ -62,7 +62,7 @@
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 50, view.frame.size.width, 100)];
     label.textAlignment = NSTextAlignmentCenter;
     label.font = [UIFont systemFontOfSize:30];
-    label.text = [NSString stringWithFormat:@"%d", index];
+    label.text = [NSString stringWithFormat:@"PanelPanel %d", index];
     [view addSubview:label];
     
     return view;
