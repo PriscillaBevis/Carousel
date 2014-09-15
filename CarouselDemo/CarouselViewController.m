@@ -337,7 +337,8 @@
                 frame.origin.x = smallestPossibleCenter - smallestPossibleSize.width/2;
                 
             } else { //going to the left
-                indexNeeded ++;
+                UIView *lastView = _visibleViews.lastObject;
+                indexNeeded = lastView.tag + 1;
                 if (indexNeeded >= _numItems) {
                     indexNeeded = 0;
                 }
@@ -427,20 +428,16 @@
         If alpha hits 0 - should remove from view
      
      */
-    
 
     
     //1. The Position
     CGFloat sideGapWidth = leftMostCentre - smallestPossibleCenter;
-    double sideRatio = 0;
-    if (view.center.x < smallestPossibleCenter) {
-        sideRatio = (view.center.x - smallestPossibleCenter) / sideGapWidth;
-        diff = diff * sideRatio;
-        
-    } else if (view.center.x > largestPossibleCenter) {
-        sideRatio = (sideGapWidth - (view.center.x - largestPossibleCenter)) / sideGapWidth;
+    double sideRatio = sideGapWidth/segmentCenterDiff; //need to reduce it by the ratio that the side gap is smaller by the regular gap
+    
+    if ((view.center.x < leftMostCentre) || (view.center.x > rightMostCentre)) {
         diff = diff * sideRatio;
     }
+
     CGFloat panelCenter = view.center.x + diff;
     
     
@@ -489,7 +486,7 @@
          
          If alpha hits 0 - should remove from view
          */
-        //view.alpha = ratio;
+        view.alpha = ratio;
         
     } else {
         
@@ -532,17 +529,15 @@
     view.frame = adjustedFrame;
     
     
-//    //remove the view if we've hit 0
-//    if (view.alpha <= 0) {
-//        [view removeFromSuperview];
-//        [_visibleViews removeObject:view];
-//        
-//        NSLog(@"Popping off %d", view.tag);
-//    }
-    
-    
-}
+    //remove the view if we've hit 0
+    if (view.alpha <= 0) {
+        [view removeFromSuperview];
+        [_visibleViews removeObject:view];
+        
+        NSLog(@"Popping off %d", view.tag);
+    }
 
+}
 
 
 //the left most position is 0.
